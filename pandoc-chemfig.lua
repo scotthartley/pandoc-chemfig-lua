@@ -4,6 +4,8 @@
 -- replaced with sequential numbers or LaTeX \ref{} commands.
 -- Also supports wrapfig (wwidth/wpos), float placement (lpos),
 -- LaTeX type suffix (lts), and custom caption formats via metadata.
+-- The `disable_pandoc_chemfig_wrap` metadata flag disables wrapfloat
+-- wrapping document-wide, falling back to normal LaTeX float placement.
 
 -- Map from identifier to sequential number string (e.g. "s:1" to "1").
 local known_ids = {}
@@ -15,11 +17,26 @@ local known_classes = {}
 -- Populated from metadata or built as a default on first use.
 local caption_formats = {}
 
+-- Set from the `disable_pandoc_chemfig_wrap` metadata flag. When true,
+-- wwidth/wpos are ignored and figures use normal LaTeX float placement.
+local disable_wrap = false
+
 -- Stringify a list of Pandoc Inline elements to plain text.
 -- Returns "" for nil or empty input.
 local function str_of (inlines)
     if not inlines or #inlines == 0 then return "" end
     return pandoc.utils.stringify(pandoc.Span(inlines))
+end
+
+-- Interpret a metadata value as a boolean flag. Accepts MetaBool as-is and
+-- treats the strings "false", "no", "off", "0" and "" as false so that
+-- `--metadata=key:false` behaves as expected.
+local function meta_flag (value)
+    if value == nil then return false end
+    if type(value) == "boolean" then return value end
+    local text = pandoc.utils.stringify(value):lower()
+    return not (text == "" or text == "false" or text == "no"
+                or text == "off" or text == "0")
 end
 
 -- Clone a caption format template and replace "#" with the given number.
@@ -107,7 +124,7 @@ local function process_images (el)
     local latex_fig_pos = nil
     local latex_suffix = ""
 
-    if keys["wwidth"] then
+    if keys["wwidth"] and not disable_wrap then
         latex_wrap = true
         latex_size = keys["wwidth"]
     end
@@ -203,6 +220,8 @@ end
 -- before resolving references).
 function Pandoc (doc)
     local meta = doc.meta
+
+    disable_wrap = meta_flag(meta["disable_pandoc_chemfig_wrap"])
 
     for key, value in pairs(meta) do
         local class_name = key:match("^(.+)_caption_format$")

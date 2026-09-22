@@ -15,6 +15,8 @@ chart, etc.) and cross-referencing are needed.
 - LaTeX type suffix (`lts`) support for starred environments (e.g. `scheme*`).
 - Custom caption formats in non-LaTeX via metadata keys (e.g.
   `scheme_caption_format`).
+- Document-wide `wrapfloat` kill switch via the `disable_pandoc_chemfig_wrap`
+  metadata flag.
 
 ## Requirements
 
@@ -62,6 +64,30 @@ scheme_caption_format: "*Scheme #:*"
 ```
 
 The default format for any class is bold with a period, e.g. **Scheme #.**
+
+## Document Metadata Options
+
+### Disable wrapfloat wrapping
+
+Setting the `disable_pandoc_chemfig_wrap` metadata flag forces every figure to
+normal LaTeX float placement, ignoring `wwidth`/`wpos` document-wide. Figures
+with `lpos` still honor it (`\begin{scheme}[htbp]…`); others fall back to
+LaTeX's default placement (`\begin{scheme}…`). Non-LaTeX output is unaffected.
+
+Via the command line:
+
+```sh
+pandoc input.md --lua-filter pandoc-chemfig.lua \
+    --metadata=disable_pandoc_chemfig_wrap -o output.pdf
+```
+
+Via YAML front matter:
+
+```yaml
+---
+disable_pandoc_chemfig_wrap: true
+---
+```
 
 ## Acknowledgements
 
