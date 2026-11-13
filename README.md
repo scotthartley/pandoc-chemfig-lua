@@ -47,6 +47,8 @@ As shown in Scheme @s:1, the reaction proceeds via...
 | `wwidth` | Width for wrapfloat. Setting this triggers wrapping. `0in` fits to width of image. | `wwidth=0.4in` |
 | `wpos` | Position for wrapfloat. Defaults to `r` (right). | `wpos=l` |
 | `lpos` | Explicit float placement specifier. Mutually exclusive with `wwidth`/`wpos`; wrapping takes priority if both are set. | `lpos=htbp` |
+| `width` | Image width passed to `\includegraphics`. Percentages are relative to `\linewidth`; `px` or unitless values are converted at 96 dpi; other units (`in`, `cm`, `mm`, `pt`, ...) pass through. Non-LaTeX formats use pandoc's normal handling. | `width=3.5in`, `width=50%` |
+| `height` | Image height passed to `\includegraphics`. Percentages are relative to `\textheight`. If both `width` and `height` are set, `keepaspectratio` is added. | `height=2in` |
 | `lts` | LaTeX type suffix appended to the float environment name. | `lts=*` produces `\begin{scheme*}` |
 
 ## Caption Format Overrides

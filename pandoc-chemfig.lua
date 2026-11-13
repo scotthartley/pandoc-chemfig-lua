@@ -39,6 +39,25 @@ local function meta_flag (value)
                 or text == "off" or text == "0")
 end
 
+-- Convert a pandoc-style image dimension (e.g. "3.5in", "50%", "300px",
+-- "300") into a LaTeX length. Percentages become a fraction of `relative_to`
+-- (\linewidth for width, \textheight for height), mirroring pandoc's own
+-- LaTeX writer. Pixel and unitless values are converted to inches at 96 dpi.
+-- Anything else (cm, mm, pt, em, \linewidth, ...) is passed through as-is.
+local function latex_dimension (value, relative_to)
+    if not value or value == "" then return nil end
+    local num, unit = value:match("^%s*([%d%.]+)%s*(%S*)%s*$")
+    if not num then return value end
+    if unit == "%" then
+        return string.format("%g", tonumber(num) / 100) .. relative_to
+    elseif unit == "" or unit == "px" then
+        return string.format("%g", tonumber(num) / 96) .. "in"
+    elseif unit == "inch" then
+        return num .. "in"
+    end
+    return num .. unit
+end
+
 -- Clone a caption format template and replace "#" with the given number.
 local function insert_number (fmt_inlines, num)
     local label = pandoc.Inlines(fmt_inlines):clone()
@@ -116,6 +135,7 @@ local function process_images (el)
     --   wpos:   wrapfloat position (default "r")
     --   lpos:   float placement specifier (e.g. "htbp")
     --   lts:    type suffix appended to class (e.g. "*" for "scheme*")
+    --   width/height: image size passed to \includegraphics
     -- Wrapping and placement are mutually exclusive; wrapping takes priority.
     local latex_wrap = false
     local latex_size = nil
@@ -153,7 +173,15 @@ local function process_images (el)
             end
         end
 
-        local alt_opt = alt_text ~= "" and "alt={" .. alt_text .. "}" or ""
+        -- \includegraphics options: width/height (pandoc-style) and alt text.
+        local gfx_opts = {}
+        local width = latex_dimension(keys["width"], "\\linewidth")
+        local height = latex_dimension(keys["height"], "\\textheight")
+        if width then gfx_opts[#gfx_opts + 1] = "width=" .. width end
+        if height then gfx_opts[#gfx_opts + 1] = "height=" .. height end
+        if width and height then gfx_opts[#gfx_opts + 1] = "keepaspectratio" end
+        if alt_text ~= "" then gfx_opts[#gfx_opts + 1] = "alt={" .. alt_text .. "}" end
+        local alt_opt = table.concat(gfx_opts, ",")
         local src = image_src
 
         -- 2. Assemble raw LaTeX
