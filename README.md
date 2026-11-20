@@ -17,6 +17,8 @@ chart, etc.) and cross-referencing are needed.
   `scheme_caption_format`).
 - Document-wide `wrapfloat` kill switch via the `disable_pandoc_chemfig_wrap`
   metadata flag.
+- Optional figure ids in non-LaTeX captions (e.g. **Figure 1 (f:label).**) via
+  the `show_pandoc_chemfig_labels` metadata flag, handy for previewing.
 
 ## Requirements
 
@@ -88,6 +90,33 @@ Via YAML front matter:
 ```yaml
 ---
 disable_pandoc_chemfig_wrap: true
+---
+```
+
+### Show labels in captions
+
+Setting the `show_pandoc_chemfig_labels` metadata flag appends each figure's
+identifier to its caption number, so a caption reads e.g.
+**Figure 1 (f:label).** This makes it easy to see which `#id` to cite when
+previewing a document (e.g. in Marked). In-text references (`@f:label`) still
+render as plain numbers. Only non-LaTeX output is affected; LaTeX output is
+unchanged.
+
+With a custom `<class>_caption_format`, the `#` is replaced by the number and
+label together, so `"*Scheme #:*"` becomes *Scheme 1 (s:label):*.
+
+Via the command line:
+
+```sh
+pandoc input.md --lua-filter pandoc-chemfig.lua \
+    --metadata=show_pandoc_chemfig_labels -o output.html
+```
+
+Via YAML front matter:
+
+```yaml
+---
+show_pandoc_chemfig_labels: true
 ---
 ```
 

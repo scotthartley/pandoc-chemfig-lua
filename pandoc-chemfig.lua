@@ -6,6 +6,8 @@
 -- LaTeX type suffix (lts), and custom caption formats via metadata.
 -- The `disable_pandoc_chemfig_wrap` metadata flag disables wrapfloat
 -- wrapping document-wide, falling back to normal LaTeX float placement.
+-- The `show_pandoc_chemfig_labels` metadata flag appends each figure's id to
+-- its caption number in non-LaTeX output (e.g. "Figure 1 (f:label).").
 
 -- Map from identifier to sequential number string (e.g. "s:1" to "1").
 local known_ids = {}
@@ -20,6 +22,11 @@ local caption_formats = {}
 -- Set from the `disable_pandoc_chemfig_wrap` metadata flag. When true,
 -- wwidth/wpos are ignored and figures use normal LaTeX float placement.
 local disable_wrap = false
+
+-- Set from the `show_pandoc_chemfig_labels` metadata flag. When true,
+-- non-LaTeX captions show the figure id after the number, e.g.
+-- "Figure 1 (f:label).". In-text references still render as plain numbers.
+local show_labels = false
 
 -- Stringify a list of Pandoc Inline elements to plain text.
 -- Returns "" for nil or empty input.
@@ -63,7 +70,8 @@ local function insert_number (fmt_inlines, num)
     local label = pandoc.Inlines(fmt_inlines):clone()
     return label:walk({
         Str = function (s)
-            return pandoc.Str(s.text:gsub("#", tostring(num)))
+            -- Function replacement so "%" in num is not treated specially.
+            return pandoc.Str((s.text:gsub("#", function () return num end)))
         end
     })
 end
@@ -225,7 +233,11 @@ local function process_images (el)
         end
         local fmt_inlines = caption_formats[image_class]
 
-        local label = insert_number(fmt_inlines, known_ids[image_id])
+        local cap_num = known_ids[image_id]
+        if show_labels then
+            cap_num = cap_num .. " (" .. image_id .. ")"
+        end
+        local label = insert_number(fmt_inlines, cap_num)
 
         -- Prepend the label to the original caption.
         local orig_cap = {}
@@ -250,6 +262,7 @@ function Pandoc (doc)
     local meta = doc.meta
 
     disable_wrap = meta_flag(meta["disable_pandoc_chemfig_wrap"])
+    show_labels = meta_flag(meta["show_pandoc_chemfig_labels"])
 
     for key, value in pairs(meta) do
         local class_name = key:match("^(.+)_caption_format$")
